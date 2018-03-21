@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="bc8c1e27-2553-46ae-a20c-24004a8f3482" name="chaomy" url="http://111.200.223.155">
+        <fileTransfer host="111.200.223.155" port="2222" rootFolder="/home/wubin/PycharmProjects" accessType="SFTP">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" />
+          </advancedOptions>
+          <option name="port" value="2222" />
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
