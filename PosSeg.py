@@ -67,6 +67,9 @@ class SegBiGRU(nn.Module):
         hidden_a = torch.cat((encoder_hiddens_a, encoder_hiddens_a_r), dim=2)
         hidden_c = torch.cat((encoder_hiddens_c, encoder_hiddens_c_r), dim=2)
 
+        hidden_a = hidden_a.transpose(1, 0)
+        hidden_c = hidden_c.transpose(1, 0)
+
         matrix = torch.bmm(hidden_a, hidden_a.transpose(2, 1))
         attention = self.softmax(matrix).transpose(2, 1)
 
@@ -120,8 +123,8 @@ class SegGRU(nn.Module):
             encoder_hiddens_c[ei] = encoder_hidden_c
 
 
-        hidden_a = encoder_hiddens_a
-        hidden_c = encoder_hiddens_c
+        hidden_a = encoder_hiddens_a.transpose(1, 0)
+        hidden_c = encoder_hiddens_c.transpose(1, 0)
 
         matrix = torch.bmm(hidden_a, hidden_a.transpose(2, 1))
         attention = self.softmax(matrix).transpose(2, 1)

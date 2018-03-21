@@ -14,10 +14,10 @@ use_cuda = torch.cuda.is_available()
 net = SegBiGRU()
 if use_cuda:
     net = net.cuda()
-learning_rate = 0.0001
+learning_rate = 0.001
 BATCH_SIZE = 256
 
-criterion = nn.CrossEntropyLoss(size_average=False, ignore_index=102)
+criterion = nn.CrossEntropyLoss(ignore_index=101)
 optimizer = optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=5e-4)
 dataLoader = torch.utils.data.DataLoader(SegData(source_file="train/source.txt", target_file="train/target.txt"), batch_size=BATCH_SIZE, shuffle=True, num_workers= 3)
 
@@ -35,6 +35,8 @@ def train():
         pre_out = net(input)
 
         output = output.view(len(data_tuple[0]) * 40)
+
+
 
         loss = criterion(pre_out, output)
 
@@ -57,7 +59,6 @@ def train():
         input, output = Variable(input), Variable(output)
         pre_out = net(input)
 
-
         output = output.view(len(data_tuple[0]) * 40)
 
         loss = criterion(pre_out, output)
@@ -66,6 +67,9 @@ def train():
 
         _, predicted = torch.max(pre_out, 1)
 
+        print predicted
+        print output
+        print "##############"
         loss.backward()
         optimizer.step()
 
