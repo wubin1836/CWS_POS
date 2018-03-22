@@ -11,13 +11,18 @@ from mydata import SegData
 from PosSeg import Seg, SegGRU, SegBiGRU
 
 use_cuda = torch.cuda.is_available()
-net = SegBiGRU()
+# net = SegBiGRU()
+net = SegGRU()
+
 if use_cuda:
     net = net.cuda()
-learning_rate = 0.001
-BATCH_SIZE = 256
 
-criterion = nn.CrossEntropyLoss(ignore_index=101)
+# net.load_state_dict(torch.load("models/models_nas_darknet/12/7.pt"))
+
+learning_rate = 0.00001
+BATCH_SIZE = 512
+
+criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=5e-4)
 dataLoader = torch.utils.data.DataLoader(SegData(source_file="train/source.txt", target_file="train/target.txt"), batch_size=BATCH_SIZE, shuffle=True, num_workers= 3)
 
@@ -35,15 +40,14 @@ def train():
         pre_out = net(input)
 
         output = output.view(len(data_tuple[0]) * 40)
-
-
-
+        # print output
+        # print pre_out
         loss = criterion(pre_out, output)
 
         all_loss += loss.data[0]
         all_step += 1
 
-        if all_step % 100 == 0:
+        if all_step % 20 == 0:
             print all_loss / all_step
 
         loss.backward()
@@ -67,23 +71,27 @@ def train():
 
         _, predicted = torch.max(pre_out, 1)
 
-        print predicted
-        print output
-        print "##############"
+        if batch_idx % 101 == 0:
+            print predicted
+            print output
+            print "##############"
         loss.backward()
         optimizer.step()
 
     print "train: ", all_loss / all_step
     print "valid: ", valid_loss / valid_step
 
+
+
 def adjust_learning_rate(optimizer, epoch):
-    lr = learning_rate * (0.5 ** (epoch // 10))
+    lr = learning_rate * (0.1 ** (epoch // 50))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
-for epoch in range(100):
+for epoch in range(1000):
     adjust_learning_rate(optimizer, epoch)
     print "epoch : "+ str(epoch)
     train()
-    if epoch % 20 == 0:
+    if epoch % 50 == 0:
         torch.save(net.state_dict(), "models/model_" + str(epoch) + ".pt")
+    print "#####################################"
