@@ -11,8 +11,8 @@ from mydata import SegData
 from PosSeg import Seg, SegGRU, SegBiGRU
 
 use_cuda = torch.cuda.is_available()
-# net = SegBiGRU()
-net = SegGRU()
+net = SegBiGRU()
+# net = SegGRU()
 
 if use_cuda:
     net = net.cuda()
@@ -22,27 +22,31 @@ if use_cuda:
 learning_rate = 0.00001
 BATCH_SIZE = 512
 
-criterion = nn.CrossEntropyLoss()
+criterion = nn.CrossEntropyLoss(ignore_index=101)
+criterion_s = nn.CrossEntropyLoss(ignore_index=4)
 optimizer = optim.SGD(net.parameters(), lr=learning_rate, momentum=0.9, weight_decay=5e-4)
 dataLoader = torch.utils.data.DataLoader(SegData(source_file="train/source.txt", target_file="train/target.txt"), batch_size=BATCH_SIZE, shuffle=True, num_workers= 3)
 
 dataValidLoader = torch.utils.data.DataLoader(SegData(source_file="dev/source.txt", target_file="dev/target.txt"), batch_size=BATCH_SIZE, shuffle=True, num_workers= 3)
 
+INPUT_LENGTH= 40
+
 def train():
     all_loss = 0
     all_step = 0
     for batch_idx, data_tuple in enumerate(dataLoader):
-        input, output = data_tuple[0], data_tuple[1]
+        input, output, output_s = data_tuple[0], data_tuple[1], data_tuple[2]
         if use_cuda:
-            input, output = input.cuda(), output.cuda()
+            input, output, output_s = input.cuda(), output.cuda(), output_s.cuda()
 
-        input, output = Variable(input), Variable(output)
-        pre_out = net(input)
+        input, output, output_s = Variable(input), Variable(output), Variable(output_s)
+        pre_out, pre_out_s = net(input)
 
-        output = output.view(len(data_tuple[0]) * 40)
-        # print output
-        # print pre_out
-        loss = criterion(pre_out, output)
+        output = output.view(len(data_tuple[0]) * INPUT_LENGTH)
+        output_s = output_s.view(len(data_tuple[0]) * INPUT_LENGTH)
+
+
+        loss = criterion(pre_out, output) + criterion_s(pre_out_s, output_s)
 
         all_loss += loss.data[0]
         all_step += 1
@@ -56,16 +60,18 @@ def train():
     valid_loss = 0
     valid_step = 0
     for batch_idx, data_tuple in enumerate(dataValidLoader):
-        input, output = data_tuple[0], data_tuple[1]
+        input, output, output_s = data_tuple[0], data_tuple[1], data_tuple[2]
         if use_cuda:
-            input, output = input.cuda(), output.cuda()
+            input, output, output_s = input.cuda(), output.cuda(), output_s.cuda()
 
-        input, output = Variable(input), Variable(output)
-        pre_out = net(input)
+        input, output, output_s = Variable(input), Variable(output), Variable(output_s)
+        pre_out, pre_out_s = net(input)
 
-        output = output.view(len(data_tuple[0]) * 40)
+        output = output.view(len(data_tuple[0]) * INPUT_LENGTH)
+        output_s = output_s.view(len(data_tuple[0]) * INPUT_LENGTH)
 
-        loss = criterion(pre_out, output)
+        loss = criterion(pre_out, output) + criterion_s(pre_out_s, output_s)
+
         valid_loss += loss.data[0]
         valid_step += 1
 
@@ -93,5 +99,5 @@ for epoch in range(1000):
     print "epoch : "+ str(epoch)
     train()
     if epoch % 50 == 0:
-        torch.save(net.state_dict(), "models/model_" + str(epoch) + ".pt")
+        torch.save(net.state_dict(), "models_pos_seg/model_" + str(epoch) + ".pt")
     print "#####################################"
